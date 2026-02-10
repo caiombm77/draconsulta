@@ -166,57 +166,33 @@ const server = http.createServer((req, res) => {
     }
     return;
   }
-  // 🔒 Protege o painel admin com usuário/senha
-  if (url === '/admin.html') {
-    const auth = req.headers['authorization'];
+ // 🔒 Protege o painel admin com usuário/senha (aceita /admin.html e /admin.html?... )
+if (url && url.startsWith('/admin.html')) {
+  const auth = req.headers['authorization'];
 
-    if (!auth) {
-      res.writeHead(401, {
-        'WWW-Authenticate': 'Basic realm="Painel Administrativo"',
-        'Content-Type': 'text/plain'
-      });
-      res.end('Acesso restrito');
-      return;
-    }
+  const askAuthAgain = (msg) => {
+    res.writeHead(401, {
+      'WWW-Authenticate': 'Basic realm="Painel Administrativo"',
+      'Content-Type': 'text/plain'
+    });
+    res.end(msg);
+  };
 
-    const base64 = auth.split(' ')[1];
-    const decoded = Buffer.from(base64, 'base64').toString('utf8');
-    const [user, pass] = decoded.split(':');
-
-    const ADMIN_USER = process.env.ADMIN_USER || 'admin';
-    const ADMIN_PASS = process.env.ADMIN_PASS || '123456';
-
-   if (user !== ADMIN_USER || pass !== ADMIN_PASS) {
-  // 401 faz o navegador pedir login de novo (em vez de "travar")
-  res.writeHead(401, {
-    'WWW-Authenticate': 'Basic realm="Painel Administrativo"',
-    'Content-Type': 'text/plain'
-  });
-  res.end('Usuário ou senha incorretos');
-  return;
-  }
+  if (!auth || !auth.startsWith('Basic ')) {
+    return askAuthAgain('Acesso restrito');
   }
 
-  // Default: serve static files
-  let filePath = '.' + url;
-  if (filePath === './' || filePath === './index') {
-    filePath = './index.html';
+  const base64 = auth.split(' ')[1];
+  const decoded = Buffer.from(base64, 'base64').toString('utf8');
+  const parts = decoded.split(':');
+  const user = (parts[0] || '').trim();
+  const pass = (parts.slice(1).join(':') || '').trim(); // caso a senha tenha ":"
+
+  const ADMIN_USER = (process.env.ADMIN_USER || 'admin').trim();
+  const ADMIN_PASS = (process.env.ADMIN_PASS || '123456').trim();
+
+  if (user !== ADMIN_USER || pass !== ADMIN_PASS) {
+    return askAuthAgain('Usuário ou senha incorretos');
   }
-
-  const resolvedPath = path.join(__dirname, filePath);
-
-  if (!resolvedPath.startsWith(__dirname)) {
-    res.writeHead(403, { 'Content-Type': 'text/plain' });
-    res.end('Acesso negado');
-    return;
-  }
-
-  serveStatic(resolvedPath, res);
-});
-
-const PORT = process.env.PORT || 3000;
-
-server.listen(PORT, '0.0.0.0', () => {
-  console.log(`Servidor iniciado na porta ${PORT}`);
-});
+}
 
