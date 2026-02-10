@@ -195,4 +195,26 @@ if (url && url.startsWith('/admin.html')) {
     return askAuthAgain('Usuário ou senha incorretos');
   }
 }
+  // Default: serve static files
+  let filePath = '.' + url;
+  if (filePath === './' || filePath === './index') {
+    filePath = './index.html';
+  }
+
+  const resolvedPath = path.join(__dirname, filePath);
+
+  if (!resolvedPath.startsWith(__dirname)) {
+    res.writeHead(403, { 'Content-Type': 'text/plain' });
+    res.end('Acesso negado');
+    return;
+  }
+
+  serveStatic(resolvedPath, res);
+});
+
+const PORT = process.env.PORT || 3000;
+
+server.listen(PORT, '0.0.0.0', () => {
+  console.log(`Servidor iniciado na porta ${PORT}`);
+});
 
