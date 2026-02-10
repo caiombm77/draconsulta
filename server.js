@@ -185,7 +185,10 @@ const server = http.createServer((req, res) => {
 // Start the server on port 3000.  When running inside the container,
 // use port 3000 so it does not conflict with other services.  The
 // console output provides a URL for manual testing.
-const PORT = 3000;
-server.listen(PORT, () => {
-  console.log(`Servidor iniciado em http://localhost:${PORT}`);
+const PORT = process.env.PORT || 3000;
+
+server.listen(PORT, '0.0.0.0', () => {
+  console.log(`Servidor iniciado na porta ${PORT}`);
+});
+
 });
