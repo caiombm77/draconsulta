@@ -166,6 +166,32 @@ const server = http.createServer((req, res) => {
     }
     return;
   }
+  // 🔒 Protege o painel admin com usuário/senha
+if (url === '/admin.html') {
+  const auth = req.headers['authorization'];
+
+  if (!auth) {
+    res.writeHead(401, {
+      'WWW-Authenticate': 'Basic realm="Painel Administrativo"',
+      'Content-Type': 'text/plain'
+    });
+    res.end('Acesso restrito');
+    return;
+  }
+
+  const base64 = auth.split(' ')[1];
+  const decoded = Buffer.from(base64, 'base64').toString('utf8');
+  const [user, pass] = decoded.split(':');
+
+  const ADMIN_USER = process.env.ADMIN_USER || 'admin';
+  const ADMIN_PASS = process.env.ADMIN_PASS || '123456';
+
+  if (user !== ADMIN_USER || pass !== ADMIN_PASS) {
+    res.writeHead(403, { 'Content-Type': 'text/plain' });
+    res.end('Usuário ou senha incorretos');
+    return;
+  }
+  
   // Default: serve static files
   let filePath = '.' + url;
   if (filePath === './' || filePath === './index') {
