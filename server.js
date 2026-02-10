@@ -186,11 +186,15 @@ const server = http.createServer((req, res) => {
     const ADMIN_USER = process.env.ADMIN_USER || 'admin';
     const ADMIN_PASS = process.env.ADMIN_PASS || '123456';
 
-    if (user !== ADMIN_USER || pass !== ADMIN_PASS) {
-      res.writeHead(403, { 'Content-Type': 'text/plain' });
-      res.end('Usuário ou senha incorretos');
-      return;
-    }
+   if (user !== ADMIN_USER || pass !== ADMIN_PASS) {
+  // 401 faz o navegador pedir login de novo (em vez de "travar")
+  res.writeHead(401, {
+    'WWW-Authenticate': 'Basic realm="Painel Administrativo"',
+    'Content-Type': 'text/plain'
+  });
+  res.end('Usuário ou senha incorretos');
+  return;
+  }
   }
 
   // Default: serve static files
