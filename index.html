@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Dra. Consulta – Marcação de Consulta</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <header>
+    <h1>Dra. Consulta</h1>
+    <p>Agende sua consulta de forma simples e rápida</p>
+  </header>
+
+  <main>
+    <section class="form-container">
+      <h2>Formulário de agendamento</h2>
+      <form id="bookingForm">
+        <div class="form-group">
+          <label for="nome">Nome</label>
+          <input type="text" id="nome" name="nome" required placeholder="Seu nome completo">
+        </div>
+        <div class="form-group">
+          <label for="email">Email</label>
+          <input type="email" id="email" name="email" required placeholder="seu@email.com">
+        </div>
+        <div class="form-group">
+          <label for="telefone">Telefone</label>
+          <input type="tel" id="telefone" name="telefone" required placeholder="(xx) xxxxx-xxxx">
+        </div>
+        <div class="form-group">
+          <label for="data">Data desejada</label>
+          <input type="date" id="data" name="data" required>
+        </div>
+        <div class="form-group">
+          <label for="hora">Horário preferido</label>
+          <input type="time" id="hora" name="hora" required min="08:00" max="17:00">
+          <small>Horário de atendimento das 08:00 às 17:00 (segunda a sexta)</small>
+        </div>
+        <div class="form-group">
+          <label for="hospital">Hospital ou Médico</label>
+          <input type="text" id="hospital" name="hospital" required placeholder="Ex.: Hospital Central ou Dr. Silva">
+        </div>
+        <div class="form-group">
+          <label for="observacoes">Observações</label>
+          <textarea id="observacoes" name="observacoes" rows="4" placeholder="Informações adicionais"></textarea>
+        </div>
+        <button type="submit">Enviar solicitação</button>
+      </form>
+      <div id="mensagem" class="mensagem"></div>
+    </section>
+  </main>
+
+  <footer>
+    <p>&copy; <span id="ano"></span> Dra. Consulta. Todos os direitos reservados.</p>
+  </footer>
+
+  <script>
+    // Define a data mínima do calendário como hoje
+    document.addEventListener('DOMContentLoaded', function() {
+      const hoje = new Date();
+      const yyyy = hoje.getFullYear();
+      const mm = String(hoje.getMonth() + 1).padStart(2, '0');
+      const dd = String(hoje.getDate()).padStart(2, '0');
+      const dataMin = `${yyyy}-${mm}-${dd}`;
+      document.getElementById('data').min = dataMin;
+      document.getElementById('ano').textContent = yyyy;
+    });
+
+    // Função para validar se o dia selecionado é um dia útil (segunda a sexta)
+    function diaUtil(dateString) {
+      const date = new Date(dateString);
+      const day = date.getDay();
+      // 0 = domingo, 6 = sábado
+      return day >= 1 && day <= 5;
+    }
+
+    // Manipula o envio do formulário
+    const form = document.getElementById('bookingForm');
+    form.addEventListener('submit', function(event) {
+      event.preventDefault();
+      const nome = document.getElementById('nome').value.trim();
+      const email = document.getElementById('email').value.trim();
+      const telefone = document.getElementById('telefone').value.trim();
+      const data = document.getElementById('data').value;
+      const hora = document.getElementById('hora').value;
+      const hospital = document.getElementById('hospital').value.trim();
+      const observacoes = document.getElementById('observacoes').value.trim();
+
+      // Validar se a data é dia útil
+      if (!diaUtil(data)) {
+        mostrarMensagem('Por favor selecione um dia útil (segunda a sexta).', false);
+        return;
+      }
+
+      const payload = { nome, email, telefone, data, hora, hospital, observacoes };
+      // Determina a base da API. Ao abrir o arquivo localmente, utilizar localhost.
+      const API_BASE = (location.protocol === 'file:' ? 'http://localhost:3000' : '');
+      fetch(`${API_BASE}/api/book`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      })
+        .then(response => response.json())
+        .then(data => {
+          if (data.success) {
+            mostrarMensagem('Solicitação enviada com sucesso! Entraremos em contato em breve.', true);
+            form.reset();
+          } else {
+            mostrarMensagem('Ocorreu um erro ao enviar. Tente novamente.', false);
+          }
+        })
+        .catch(() => {
+          mostrarMensagem('Falha na comunicação com o servidor.', false);
+        });
+    });
+
+    function mostrarMensagem(texto, sucesso) {
+      const msgDiv = document.getElementById('mensagem');
+      msgDiv.textContent = texto;
+      msgDiv.className = 'mensagem ' + (sucesso ? 'sucesso' : 'erro');
+      // Desaparecer após alguns segundos
+      setTimeout(() => {
+        msgDiv.textContent = '';
+        msgDiv.className = 'mensagem';
+      }, 6000);
+    }
+  </script>
+</body>
+</html>

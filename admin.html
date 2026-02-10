@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Dra. Consulta – Painel de Marcações</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <header>
+    <h1>Painel de Marcações</h1>
+    <p>Visualize e gerencie as solicitações de consulta</p>
+  </header>
+  <main>
+    <section>
+      <button id="refreshBtn">Atualizar lista</button>
+      <table id="bookingsTable">
+        <thead>
+          <tr>
+            <th>ID</th>
+            <th>Nome</th>
+            <th>Data</th>
+            <th>Hora</th>
+            <th>Hospital/Médico</th>
+            <th>Contato</th>
+            <th>Observações</th>
+            <th>Recebido em</th>
+            <th>Ações</th>
+          </tr>
+        </thead>
+        <tbody>
+          <!-- Linhas inseridas dinamicamente -->
+        </tbody>
+      </table>
+      <div id="adminMsg" class="mensagem"></div>
+    </section>
+  </main>
+  <footer>
+    <p>&copy; <span id="ano"></span> Dra. Consulta. Todos os direitos reservados.</p>
+  </footer>
+
+  <script>
+    document.addEventListener('DOMContentLoaded', () => {
+      document.getElementById('ano').textContent = new Date().getFullYear();
+      document.getElementById('refreshBtn').addEventListener('click', carregarRegistros);
+      carregarRegistros();
+    });
+
+    function carregarRegistros() {
+      const API_BASE = (location.protocol === 'file:' ? 'http://localhost:3000' : '');
+      fetch(`${API_BASE}/api/bookings`)
+        .then(resp => resp.json())
+        .then(data => renderTabela(data))
+        .catch(() => mostrarMsg('Falha ao carregar dados', false));
+    }
+
+    function renderTabela(registros) {
+      const tbody = document.getElementById('bookingsTable').querySelector('tbody');
+      tbody.innerHTML = '';
+      if (!Array.isArray(registros) || registros.length === 0) {
+        const tr = document.createElement('tr');
+        const td = document.createElement('td');
+        td.colSpan = 9;
+        td.textContent = 'Nenhuma solicitação encontrada.';
+        td.style.textAlign = 'center';
+        tr.appendChild(td);
+        tbody.appendChild(tr);
+        return;
+      }
+      registros.sort((a, b) => b.id - a.id); // listar mais recentes primeiro
+      registros.forEach(reg => {
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+          <td>${reg.id}</td>
+          <td>${escapeHtml(reg.nome)}</td>
+          <td>${reg.data}</td>
+          <td>${reg.hora}</td>
+          <td>${escapeHtml(reg.hospital)}</td>
+          <td>${escapeHtml(reg.email)}<br>${escapeHtml(reg.telefone)}</td>
+          <td>${escapeHtml(reg.observacoes || '')}</td>
+          <td>${new Date(reg.timestamp).toLocaleString('pt-BR')}</td>
+          <td><button class="deleteBtn" data-id="${reg.id}">Excluir</button></td>
+        `;
+        tbody.appendChild(tr);
+      });
+      // Atribuir evento aos botões de exclusão
+      document.querySelectorAll('.deleteBtn').forEach(btn => {
+        btn.addEventListener('click', () => {
+          const id = btn.getAttribute('data-id');
+          if (confirm('Deseja realmente excluir este registro?')) {
+            deletarRegistro(id);
+          }
+        });
+      });
+    }
+
+    function deletarRegistro(id) {
+      const API_BASE = (location.protocol === 'file:' ? 'http://localhost:3000' : '');
+      fetch(`${API_BASE}/api/delete?id=${id}`, { method: 'GET' })
+        .then(resp => resp.json())
+        .then(data => {
+          if (data.success) {
+            mostrarMsg('Registro excluído com sucesso!', true);
+            carregarRegistros();
+          } else {
+            mostrarMsg(data.error || 'Erro ao excluir registro', false);
+          }
+        })
+        .catch(() => mostrarMsg('Erro na comunicação com o servidor', false));
+    }
+
+    function mostrarMsg(texto, sucesso) {
+      const msgDiv = document.getElementById('adminMsg');
+      msgDiv.textContent = texto;
+      msgDiv.className = 'mensagem ' + (sucesso ? 'sucesso' : 'erro');
+      setTimeout(() => {
+        msgDiv.textContent = '';
+        msgDiv.className = 'mensagem';
+      }, 5000);
+    }
+
+    // Função simples para evitar injeção de HTML
+    function escapeHtml(str) {
+      if (!str) return '';
+      return String(str)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#039;');
+    }
+  </script>
+</body>
+</html>
