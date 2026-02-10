@@ -9,6 +9,8 @@
 </head>
 <body>
   <header>
+    <!-- Logotipo da marca -->
+    <img src="logo.png" alt="Logo Dra. Consulta" class="logo">
     <h1>Dra. Consulta</h1>
     <p>Agende sua consulta de forma simples e rápida</p>
   </header>
@@ -70,9 +72,14 @@
 
     // Função para validar se o dia selecionado é um dia útil (segunda a sexta)
     function diaUtil(dateString) {
-      const date = new Date(dateString);
+      // Evitar problemas de fuso horário criando a data a partir de componentes
+      const parts = dateString.split('-');
+      const year = parseInt(parts[0], 10);
+      const month = parseInt(parts[1], 10) - 1;
+      const dayNum = parseInt(parts[2], 10);
+      const date = new Date(year, month, dayNum);
       const day = date.getDay();
-      // 0 = domingo, 6 = sábado
+      // 0 = domingo, 6 = sábado. Permitidos dias 1 (segunda) a 5 (sexta)
       return day >= 1 && day <= 5;
     }
 
@@ -103,10 +110,12 @@
         body: JSON.stringify(payload)
       })
         .then(response => response.json())
-        .then(data => {
-          if (data.success) {
-            mostrarMensagem('Solicitação enviada com sucesso! Entraremos em contato em breve.', true);
+        .then(result => {
+          if (result.success) {
+            mostrarMensagem('Solicitação enviada com sucesso! Seu pedido será encaminhado via WhatsApp.', true);
             form.reset();
+            // Após gravar, enviar os dados por WhatsApp para a clínica selecionada
+            enviarGuiaViaWhatsApp(payload);
           } else {
             mostrarMensagem('Ocorreu um erro ao enviar. Tente novamente.', false);
           }
@@ -125,6 +134,42 @@
         msgDiv.textContent = '';
         msgDiv.className = 'mensagem';
       }, 6000);
+    }
+
+    // Dicionário de números de WhatsApp para cada hospital/clínica.
+    // Atualize estes valores conforme necessário.
+    const WHATSAPP_NUMBERS = {
+      'Sonnar': '5577999991111',
+      'Multimagem': '5577999992222',
+      'IDOPI': '5577999993333',
+      'São Lucas': '5577999994444'
+      // Adicione outras clínicas e seus números aqui
+    };
+
+    /**
+     * Constrói uma mensagem de encaminhamento e abre o WhatsApp Web para enviar.
+     * @param {Object} dados Dados do agendamento enviado pelo formulário
+     */
+    function enviarGuiaViaWhatsApp(dados) {
+      const nome = dados.nome;
+      const data = dados.data;
+      const hora = dados.hora;
+      const hospital = dados.hospital;
+      const telefone = dados.telefone;
+      const observacoes = dados.observacoes || '';
+      // Seleciona o número de WhatsApp da clínica. Caso não exista, usar número genérico.
+      const phone = WHATSAPP_NUMBERS[hospital] || '5577999990000';
+      const mensagem =
+        `Olá, fiz um agendamento pela Dra.Consulta e gostaria de confirmar.\n` +
+        `Nome: ${nome}\n` +
+        `Data: ${data}\n` +
+        `Hora: ${hora}\n` +
+        `Hospital/Clínica: ${hospital}\n` +
+        `Telefone de contato: ${telefone}\n` +
+        `Observações: ${observacoes}`;
+      const url = `https://api.whatsapp.com/send?phone=${phone}&text=${encodeURIComponent(mensagem)}`;
+      // Abre o link em nova aba. Se estiver em ambiente mobile, pode redirecionar direto.
+      window.open(url, '_blank');
     }
   </script>
 </body>

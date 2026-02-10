@@ -166,55 +166,26 @@ const server = http.createServer((req, res) => {
     }
     return;
   }
- // 🔒 Protege o painel admin com usuário/senha (aceita /admin.html e /admin.html?... )
-if (url && url.startsWith('/admin.html')) {
-  const auth = req.headers['authorization'];
-
-  const askAuthAgain = (msg) => {
-    res.writeHead(401, {
-      'WWW-Authenticate': 'Basic realm="Painel Administrativo"',
-      'Content-Type': 'text/plain'
-    });
-    res.end(msg);
-  };
-
-  if (!auth || !auth.startsWith('Basic ')) {
-    return askAuthAgain('Acesso restrito');
-  }
-
-  const base64 = auth.split(' ')[1];
-  const decoded = Buffer.from(base64, 'base64').toString('utf8');
-  const parts = decoded.split(':');
-  const user = (parts[0] || '').trim();
-  const pass = (parts.slice(1).join(':') || '').trim(); // caso a senha tenha ":"
-
-  const ADMIN_USER = (process.env.ADMIN_USER || 'admin').trim();
-  const ADMIN_PASS = (process.env.ADMIN_PASS || '123456').trim();
-
-  if (user !== ADMIN_USER || pass !== ADMIN_PASS) {
-    return askAuthAgain('Usuário ou senha incorretos');
-  }
-}
   // Default: serve static files
   let filePath = '.' + url;
   if (filePath === './' || filePath === './index') {
     filePath = './index.html';
   }
-
+  // Sanitize to prevent directory traversal
   const resolvedPath = path.join(__dirname, filePath);
-
+  // If the path is outside the site directory, deny access
   if (!resolvedPath.startsWith(__dirname)) {
     res.writeHead(403, { 'Content-Type': 'text/plain' });
     res.end('Acesso negado');
     return;
   }
-
   serveStatic(resolvedPath, res);
 });
 
-const PORT = process.env.PORT || 3000;
-
-server.listen(PORT, '0.0.0.0', () => {
-  console.log(`Servidor iniciado na porta ${PORT}`);
+// Start the server on port 3000.  When running inside the container,
+// use port 3000 so it does not conflict with other services.  The
+// console output provides a URL for manual testing.
+const PORT = 3000;
+server.listen(PORT, () => {
+  console.log(`Servidor iniciado em http://localhost:${PORT}`);
 });
-

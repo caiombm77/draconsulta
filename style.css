@@ -1,20 +1,27 @@
 /* Estilos básicos para o site da Dra. Consulta */
 body {
   margin: 0;
-  font-family: Arial, Helvetica, sans-serif;
-  background-color: #f8f9fa;
+  /* Use uma família de fontes mais moderna e profissional */
+  font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+  /* Fundo em tom de verde suave para combinar com a marca */
+  background-color: #e8f5e9;
   color: #333;
 }
 
 header {
-  background-color: #0066cc;
+  /* Verde escuro inspirado nas cores da logo */
+  background-color: #006c38;
   color: #fff;
-  padding: 20px;
+  padding: 20px 10px;
   text-align: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
 }
 
 header h1 {
-  margin: 0 0 10px;
+  margin: 10px 0 5px;
 }
 
 header p {
@@ -64,18 +71,26 @@ main {
 }
 
 button {
-  background-color: #0066cc;
+  background-color: #006c38;
   color: #fff;
   border: none;
-  padding: 10px 20px;
+  padding: 10px 24px;
   font-size: 1rem;
-  border-radius: 4px;
+  border-radius: 6px;
   cursor: pointer;
   transition: background-color 0.2s ease;
 }
 
 button:hover {
-  background-color: #004c99;
+  background-color: #004c28;
+}
+
+/* Estilo para o logotipo */
+.logo {
+  max-width: 200px;
+  height: auto;
+  margin: 0 auto 10px;
+  display: block;
 }
 
 table {
